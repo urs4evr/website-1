@@ -38,7 +38,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
@@ -46,12 +46,299 @@
             background: var(--background);
             min-height: 100vh;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 100px; /* Space for sticky bottom bar */
+            padding-bottom: 120px; /* Space for footer */
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            padding: 0 20px;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .progress-line-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .progress-step {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .progress-step:hover {
+            transform: translateY(-2px);
+        }
+
+        .progress-step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .progress-step:hover .progress-step-circle {
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .progress-step.active .progress-step-circle {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .progress-step.completed .progress-step-circle {
+            border-color: var(--success-color);
+            background: var(--success-color);
+            color: white;
+        }
+
+        .progress-step-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .progress-step.active .progress-step-label {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .progress-step.completed .progress-step-label {
+            color: var(--success-color);
+        }
+
+        /* Onboarding Steps */
+        .onboarding-steps {
+            position: relative;
+            min-height: 500px;
+        }
+
+        .onboarding-step {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .onboarding-step.active {
+            display: block;
+        }
+
+        /* Navigation Buttons */
+        .step-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 40px;
+            padding: 20px;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 15px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.secondary {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .nav-btn.secondary:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nav-btn.primary:hover:not(:disabled) {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Dashboard Tab Hint - Fixed Footer */
+        .dashboard-hint-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px var(--shadow-medium);
+            animation: slideUp 0.5s ease 0.8s both;
+        }
+
+        .dashboard-hint-footer p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dashboard-hint-footer strong {
+            font-weight: 600;
+        }
+
+        /* Interactive Features Showcase */
+        .features-interactive {
+            display: flex;
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .features-sidebar {
+            flex: 0 0 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feature-item {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .feature-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .feature-item.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px var(--shadow-medium);
+        }
+
+        .feature-item-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+
+        .feature-item-subtitle {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .features-preview {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px var(--shadow-light);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feature-preview-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .feature-preview-content.active {
+            display: block;
+        }
+
+        .feature-preview-image {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1000 / 720; /* Standardgröße für Feature Screenshots */
+            object-fit: contain;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            background: linear-gradient(135deg, #f9f9f9, #f0f0f0);
+            padding: 10px;
+        }
+
+        .feature-preview-title {
+            font-size: 24px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .feature-preview-description {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
         }
         
         /* Header Section - Logo und Success Banner nebeneinander */
@@ -355,67 +642,6 @@
             line-height: 1.6;
         }
         
-        /* Quick Action Bar - Sticky Bottom */
-        .quick-actions {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-color);
-            box-shadow: 0 -4px 20px var(--shadow-light);
-            z-index: 1000;
-            animation: slideUp 0.6s ease 1s both;
-        }
-        
-        .quick-actions-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            background: var(--card-bg);
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-        
-        .action-btn.primary {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .action-btn.primary:hover {
-            background: var(--secondary-color);
-        }
-        
-        .action-btn svg {
-            width: 18px;
-            height: 18px;
-        }
         
         /* Animations */
         @keyframes fadeInDown {
@@ -481,49 +707,72 @@
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
+            .container {
+                padding-bottom: 100px;
+            }
+
             .success-banner {
                 max-width: 100%;
             }
-            
+
+            .features-interactive {
+                flex-direction: column;
+            }
+
+            .features-sidebar {
+                flex: 1;
+            }
+
+            .features-preview {
+                min-height: 400px;
+            }
+
             .features-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
-            
+
             .header h1 {
                 font-size: 26px;
             }
-            
+
             .feature-screenshot {
                 height: 260px;
             }
-            
+
             .pin-steps {
                 grid-template-columns: 1fr;
             }
-            
+
             .pin-tutorial {
                 padding: 20px;
             }
-            
-            .quick-actions-container {
-                gap: 10px;
+
+            .dashboard-hint-footer p {
+                font-size: 12px;
             }
-            
-            .action-btn {
-                padding: 8px 16px;
-                font-size: 13px;
+
+            .progress-step-label {
+                font-size: 10px;
             }
         }
-        
+
         @media (max-width: 480px) {
-            .action-btn span.btn-text {
-                display: none;
+            .feature-item {
+                padding: 12px 16px;
             }
-            
-            .action-btn {
-                padding: 10px;
+
+            .feature-item-title {
+                font-size: 14px;
+            }
+
+            .features-preview {
+                padding: 20px;
+            }
+
+            .feature-preview-title {
+                font-size: 20px;
             }
         }
     </style>
@@ -535,36 +784,44 @@
             <div class="monkey-logo">
                 <img src="/media/monkey-block.png" alt="Monkey Block Logo">
             </div>
-            
+
             <!-- Success Banner -->
             <div class="success-banner">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                <span>Extension installed successfully! Check out what you can do:</span>
+                <span>Extension installed successfully! Let's get you started:</span>
             </div>
         </div>
-        
-        <!-- Hero Video Section -->
-        <div class="hero-video">
-            <div class="video-container" id="wistia-video-container">
-                <script src="https://fast.wistia.com/player.js" async></script>
-                <script src="https://fast.wistia.com/embed/kjjom3nx0l.js" async type="module"></script>
-                <style>
-                    wistia-player[media-id='kjjom3nx0l']:not(:defined) { 
-                        background: center / contain no-repeat url('https://fast.wistia.com/embed/medias/kjjom3nx0l/swatch'); 
-                        display: block; 
-                        filter: blur(5px); 
-                        padding-top: 56.25%; /* 16:9 aspect ratio */
-                    }
-                </style>
-                <wistia-player media-id="kjjom3nx0l" wistia-popover="false" aspect="1.7777777778"></wistia-player>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-line">
+                    <div class="progress-line-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-step active" data-step="1">
+                    <div class="progress-step-circle">1</div>
+                    <div class="progress-step-label">Pin Extension</div>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <div class="progress-step-circle">2</div>
+                    <div class="progress-step-label">Features</div>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <div class="progress-step-circle">3</div>
+                    <div class="progress-step-label">Watch Video</div>
+                </div>
             </div>
         </div>
-        
-        <!-- Pin Tutorial Section -->
-        <div class="pin-tutorial">
+
+        <!-- Onboarding Steps -->
+        <div class="onboarding-steps">
+
+            <!-- Step 1: Pin Extension Tutorial -->
+            <div class="onboarding-step active" data-step="1">
+                <div class="pin-tutorial">
             <h2>📌 Pin Monkey Block for Quick Access</h2>
             <p class="subtitle">Get the most out of Monkey Block by pinning it to your toolbar</p>
             
@@ -608,138 +865,171 @@
                     <img src="popup-preview.png" alt="Quick access popup" loading="lazy" class="medium-image">
                 </div>
             </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Features Showcase -->
+            <div class="onboarding-step" data-step="2">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="font-size: 28px; color: var(--text-primary); margin-bottom: 10px;">Discover What Monkey Block Can Do</h2>
+                    <p style="color: var(--text-secondary); font-size: 16px;">Click on each feature to learn more</p>
+                </div>
+
+                <div class="features-interactive">
+                    <!-- Features Sidebar -->
+                    <div class="features-sidebar">
+                        <div class="feature-item active" data-feature="timer">
+                            <div class="feature-item-title">
+                                Timer & Daily Limits
+                            </div>
+                            <div class="feature-item-subtitle">Control your time</div>
+                        </div>
+
+                        <div class="feature-item" data-feature="social">
+                            <div class="feature-item-title">
+                                Social Media Cleaner
+                            </div>
+                            <div class="feature-item-subtitle">Remove distractions</div>
+                        </div>
+
+                        <div class="feature-item" data-feature="analytics">
+                            <div class="feature-item-title">
+                                Analytics & Insights
+                            </div>
+                            <div class="feature-item-subtitle">Track your habits</div>
+                        </div>
+
+                        <div class="feature-item" data-feature="impulse">
+                            <div class="feature-item-title">
+                                Impulse Check
+                            </div>
+                            <div class="feature-item-subtitle">Mindful browsing</div>
+                        </div>
+
+                        <div class="feature-item" data-feature="blacklist">
+                            <div class="feature-item-title">
+                                Smart Blacklist
+                            </div>
+                            <div class="feature-item-subtitle">Block websites</div>
+                        </div>
+
+                        <div class="feature-item" data-feature="restrictions">
+                            <div class="feature-item-title">
+                                Time Restrictions
+                            </div>
+                            <div class="feature-item-subtitle">Schedule your limits</div>
+                        </div>
+                    </div>
+
+                    <!-- Features Preview -->
+                    <div class="features-preview">
+                        <!-- Timer Feature -->
+                        <div class="feature-preview-content active" data-feature="timer">
+                            <img src="/feature_screenshots/timer.png" alt="Visual timer" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Timer & Daily Limits</h3>
+                            <p class="feature-preview-description">
+                                Set daily time limits for any website. A visual countdown timer shows your remaining time with color-coded warnings as time runs out. Stay aware of your browsing habits and make conscious decisions about how you spend your time online.
+                            </p>
+                        </div>
+
+                        <!-- Social Cleaner Feature -->
+                        <div class="feature-preview-content" data-feature="social">
+                            <img src="/feature_screenshots/social_cleaner.png" alt="Social media cleaner" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Social Media Cleaner</h3>
+                            <p class="feature-preview-description">
+                                Remove distracting elements from social media platforms. Hide shorts, comments, recommendations, and more on YouTube, Instagram, Twitter, and other platforms. Focus on what matters without the endless scroll.
+                            </p>
+                        </div>
+
+                        <!-- Analytics Feature -->
+                        <div class="feature-preview-content" data-feature="analytics">
+                            <img src="/feature_screenshots/insights.png" alt="Analytics dashboard" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Analytics & Insights</h3>
+                            <p class="feature-preview-description">
+                                Track your browsing habits with detailed charts and visualizations. See daily, weekly, and monthly trends to understand your productivity patterns. Identify your most visited sites and time spent to make informed decisions.
+                            </p>
+                        </div>
+
+                        <!-- Impulse Check Feature -->
+                        <div class="feature-preview-content" data-feature="impulse">
+                            <img src="/feature_screenshots/impulse_check.png" alt="Impulse check" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Impulse Check</h3>
+                            <p class="feature-preview-description">
+                                Take a mindful pause before accessing distracting sites. A breathing exercise helps you make conscious decisions about your time. Break the habit of mindless browsing with this gentle reminder to check in with yourself.
+                            </p>
+                        </div>
+
+                        <!-- Blacklist Feature -->
+                        <div class="feature-preview-content" data-feature="blacklist">
+                            <img src="/feature_screenshots/blacklist.png" alt="Blacklist feature" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Smart Blacklist</h3>
+                            <p class="feature-preview-description">
+                                Completely block distracting websites when you need to focus. Get motivated with custom quotes and affirmations when you try to access blocked sites. Create a distraction-free environment for deep work.
+                            </p>
+                        </div>
+
+                        <!-- Time Restrictions Feature -->
+                        <div class="feature-preview-content" data-feature="restrictions">
+                            <img src="/feature_screenshots/time_restrictions.png" alt="Time restrictions" class="feature-preview-image">
+                            <h3 class="feature-preview-title">Time Restrictions</h3>
+                            <p class="feature-preview-description">
+                                Schedule when your limits should apply throughout the day. Set work hours, break times, or weekend rules to match your routine. Have full control over when productivity features are active.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Video -->
+            <div class="onboarding-step" data-step="3">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="font-size: 28px; color: var(--text-primary); margin-bottom: 10px;">See Monkey Block in Action</h2>
+                    <p style="color: var(--text-secondary); font-size: 16px;">Watch this quick tutorial to learn the basics</p>
+                </div>
+
+                <div class="hero-video">
+                    <div class="video-container" id="wistia-video-container">
+                        <script src="https://fast.wistia.com/player.js" async></script>
+                        <script src="https://fast.wistia.com/embed/kjjom3nx0l.js" async type="module"></script>
+                        <style>
+                            wistia-player[media-id='kjjom3nx0l']:not(:defined) {
+                                background: center / contain no-repeat url('https://fast.wistia.com/embed/medias/kjjom3nx0l/swatch');
+                                display: block;
+                                filter: blur(5px);
+                                padding-top: 56.25%; /* 16:9 aspect ratio */
+                            }
+                        </style>
+                        <wistia-player media-id="kjjom3nx0l" wistia-popover="false" aspect="1.7777777778"></wistia-player>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        
-        <!-- Features Grid -->
-        <div class="features-grid">
-            <!-- Timer & Limits -->
-            <div class="feature-card" style="--delay: 0s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/timer.png" alt="Visual timer showing time remaining" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Timer & Daily Limits
-                        <span class="feature-badge popular">Most Used</span>
-                    </h3>
-                    <p class="feature-description">
-                        Set daily time limits for any website. A visual countdown timer shows your remaining time with color-coded warnings as time runs out.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Social Cleaner -->
-            <div class="feature-card" style="--delay: 0.1s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/social_cleaner.png" alt="Social media without distractions" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Social Media Cleaner
-                        <span class="feature-badge popular">Popular</span>
-                    </h3>
-                    <p class="feature-description">
-                        Remove distracting elements from social media. Hide shorts, comments, recommendations, and more on YouTube, Instagram, Twitter, and other platforms.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Analytics -->
-            <div class="feature-card" style="--delay: 0.2s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/insights.png" alt="Detailed usage analytics" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Analytics & Insights
-                    </h3>
-                    <p class="feature-description">
-                        Track your browsing habits with detailed charts. See daily, weekly, and monthly trends to understand your productivity patterns.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Impulse Check -->
-            <div class="feature-card" style="--delay: 0.3s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/impulse_check.png" alt="Impulse check breathing exercise" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Impulse Check
-                        <span class="feature-badge new">New</span>
-                    </h3>
-                    <p class="feature-description">
-                        Take a mindful pause before accessing distracting sites. A breathing exercise helps you make conscious decisions about your time.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Blacklist -->
-            <div class="feature-card" style="--delay: 0.4s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/blacklist.png" alt="Blocked site with motivational quote" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Smart Blacklist
-                    </h3>
-                    <p class="feature-description">
-                        Completely block distracting websites. Get motivated with custom quotes when you try to access blocked sites.
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Time Restrictions -->
-            <div class="feature-card" style="--delay: 0.5s">
-                <div class="feature-screenshot">
-                    <img src="/feature_screenshots/time_restrictions.png" alt="Schedule when limits apply" loading="lazy">
-                </div>
-                <div class="feature-content">
-                    <h3 class="feature-title">
-                        Time Restrictions
-                    </h3>
-                    <p class="feature-description">
-                        Schedule when your limits should apply. Set work hours, break times, or weekend rules to match your routine.
-                    </p>
-                </div>
-            </div>
+
+        <!-- Navigation Buttons -->
+        <div class="step-navigation">
+            <button class="nav-btn secondary" id="prev-btn" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                Previous
+            </button>
+            <button class="nav-btn primary" id="next-btn">
+                Next
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </button>
         </div>
     </div>
-    
-    <!-- Quick Actions Bar -->
-    <div class="quick-actions">
-        <div class="quick-actions-container">
-            <button class="action-btn" id="pin-extension">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2v6m0 0l3-3m-3 3L9 5"></path>
-                    <path d="M12 17v5"></path>
-                    <path d="M5 12H3"></path>
-                    <path d="M21 12h-2"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                <span class="btn-text">Pin Extension</span>
-            </button>
-            
-            <button class="action-btn primary" id="open-dashboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="9" y1="9" x2="21" y2="9"></line>
-                </svg>
-                <span class="btn-text">Open Dashboard</span>
-            </button>
-            
-            <button class="action-btn" id="start-timer">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span class="btn-text">Start Timer</span>
-            </button>
-        </div>
+
+    <!-- Dashboard Hint Footer -->
+    <div class="dashboard-hint-footer">
+        <p>
+            <strong>Your Dashboard is Ready!</strong> Look for the "Monkey Block Dashboard" tab in your browser to start using all features.
+        </p>
     </div>
-    
+
     <div id="attribution-sync"></div>
     
     <!-- Scripts -->
@@ -748,9 +1038,174 @@
     <script src="js/welcome-attribution.js"></script>
     <script src="welcome.js"></script>
     
-    <!-- Quick Actions Script -->
+    <!-- Onboarding Navigation Script -->
     <script>
-        // Video Tracking für Wistia
+        // Onboarding state
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        // DOM Elements
+        const progressFill = document.getElementById('progress-fill');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const steps = document.querySelectorAll('.onboarding-step');
+        const progressSteps = document.querySelectorAll('.progress-step');
+
+        // Update UI based on current step
+        function updateStep() {
+            // Update steps visibility
+            steps.forEach(step => {
+                step.classList.remove('active');
+                if (parseInt(step.dataset.step) === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+
+            // Update progress bar
+            progressSteps.forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                } else if (stepNum < currentStep) {
+                    step.classList.add('completed');
+                }
+            });
+
+            // Update progress fill
+            const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            progressFill.style.width = progressPercentage + '%';
+
+            // Update buttons
+            prevBtn.disabled = currentStep === 1;
+
+            if (currentStep === totalSteps) {
+                nextBtn.textContent = 'Finish';
+                nextBtn.innerHTML = 'Finish ✓';
+            } else {
+                nextBtn.innerHTML = `Next <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>`;
+            }
+
+            // Scroll to top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Track step view
+            if (window.welcomePage) {
+                const stepNames = ['Pin Extension', 'Features', 'Video'];
+                window.welcomePage.trackEvent('Onboarding Step Viewed', {
+                    step_number: currentStep,
+                    step_name: stepNames[currentStep - 1]
+                });
+            }
+        }
+
+        // Next button click
+        nextBtn.addEventListener('click', () => {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateStep();
+            } else {
+                // Finish onboarding
+                if (window.welcomePage) {
+                    window.welcomePage.trackEvent('Onboarding Completed', {
+                        total_steps: totalSteps
+                    });
+                }
+
+                // Optional: Show completion message or redirect
+                const completionMessage = document.createElement('div');
+                completionMessage.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: linear-gradient(135deg, #7a9b8e, #6b8a7a);
+                    color: white;
+                    padding: 40px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                    z-index: 10001;
+                    max-width: 400px;
+                    text-align: center;
+                    animation: fadeIn 0.3s ease;
+                `;
+                completionMessage.innerHTML = `
+                    <h2 style="margin: 0 0 15px 0; font-size: 24px;">🎉 You're All Set!</h2>
+                    <p style="margin: 0 0 20px 0; opacity: 0.95;">
+                        Check out the Monkey Block Dashboard tab to start using all features.
+                    </p>
+                    <button onclick="this.parentElement.remove()" style="
+                        padding: 12px 24px;
+                        background: white;
+                        color: #7a9b8e;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        font-size: 15px;
+                    ">Got it!</button>
+                `;
+                document.body.appendChild(completionMessage);
+                setTimeout(() => completionMessage.remove(), 5000);
+            }
+        });
+
+        // Previous button click
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStep();
+            }
+        });
+
+        // Clickable progress steps
+        progressSteps.forEach(step => {
+            step.addEventListener('click', () => {
+                const stepNum = parseInt(step.dataset.step);
+                if (stepNum !== currentStep) {
+                    currentStep = stepNum;
+                    updateStep();
+
+                    // Track direct navigation
+                    if (window.welcomePage) {
+                        window.welcomePage.trackEvent('Progress Step Clicked', {
+                            step_number: currentStep
+                        });
+                    }
+                }
+            });
+        });
+
+        // Interactive Features Showcase
+        const featureItems = document.querySelectorAll('.feature-item');
+        const featurePreviews = document.querySelectorAll('.feature-preview-content');
+
+        featureItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const featureName = item.dataset.feature;
+
+                // Update active states
+                featureItems.forEach(f => f.classList.remove('active'));
+                item.classList.add('active');
+
+                featurePreviews.forEach(p => p.classList.remove('active'));
+                const activePreview = document.querySelector(`.feature-preview-content[data-feature="${featureName}"]`);
+                if (activePreview) {
+                    activePreview.classList.add('active');
+                }
+
+                // Track feature selection
+                if (window.welcomePage) {
+                    window.welcomePage.trackEvent('Feature Explored', {
+                        feature_name: featureName,
+                        feature_title: item.querySelector('.feature-item-title').textContent.trim()
+                    });
+                }
+            });
+        });
+
+        // Video Tracking for Wistia (only initialize when step 3 is reached)
         window._wq = window._wq || [];
         _wq.push({ id: "kjjom3nx0l", onReady: function(video) {
             let hasPlayed = false;
@@ -758,7 +1213,7 @@
             let quarterReached = false;
             let halfReached = false;
             let threeQuarterReached = false;
-            
+
             // Track play event
             video.bind("play", function() {
                 if (!hasPlayed) {
@@ -771,7 +1226,7 @@
                     }
                 }
             });
-            
+
             // Track pause event
             video.bind("pause", function() {
                 if (window.welcomePage && !hasFinished) {
@@ -782,11 +1237,11 @@
                     });
                 }
             });
-            
+
             // Track progress milestones
             video.bind("secondchange", function(s) {
                 const progress = (s / video.duration()) * 100;
-                
+
                 if (!quarterReached && progress >= 25) {
                     quarterReached = true;
                     if (window.welcomePage) {
@@ -795,7 +1250,7 @@
                         });
                     }
                 }
-                
+
                 if (!halfReached && progress >= 50) {
                     halfReached = true;
                     if (window.welcomePage) {
@@ -804,7 +1259,7 @@
                         });
                     }
                 }
-                
+
                 if (!threeQuarterReached && progress >= 75) {
                     threeQuarterReached = true;
                     if (window.welcomePage) {
@@ -814,7 +1269,7 @@
                     }
                 }
             });
-            
+
             // Track video end
             video.bind("end", function() {
                 if (!hasFinished) {
@@ -828,127 +1283,9 @@
                 }
             });
         }});
-        
-        // Pin Extension - Scroll to tutorial
-        document.getElementById('pin-extension').addEventListener('click', () => {
-            // Scroll to pin tutorial section
-            const pinTutorial = document.querySelector('.pin-tutorial');
-            if (pinTutorial) {
-                pinTutorial.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Add highlight effect
-                pinTutorial.style.transition = 'all 0.3s ease';
-                pinTutorial.style.boxShadow = '0 0 30px rgba(122, 155, 142, 0.5)';
-                setTimeout(() => {
-                    pinTutorial.style.boxShadow = '';
-                }, 2000);
-            }
-            
-            // Track event
-            if (window.welcomePage) {
-                window.welcomePage.trackEvent('Pin Extension Clicked');
-            }
-        });
-        
-        // Open Dashboard
-        document.getElementById('open-dashboard').addEventListener('click', () => {
-            // Try to open dashboard through extension
-            const params = new URLSearchParams(window.location.search);
-            const extensionId = params.get('ext_id') || 'ggccjkdgmlclpigflghjjkgeblgdgffe';
-            
-            // Send message to extension to open dashboard
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                chrome.runtime.sendMessage(extensionId, { action: 'openDashboard' }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        // Fallback: show instructions
-                        showDashboardInstructions();
-                    }
-                });
-            } else {
-                showDashboardInstructions();
-            }
-            
-            // Track event
-            if (window.welcomePage) {
-                window.welcomePage.trackEvent('Open Dashboard Clicked');
-            }
-        });
-        
-        // Start Timer
-        document.getElementById('start-timer').addEventListener('click', () => {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: white;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                z-index: 10001;
-                max-width: 400px;
-                animation: slideIn 0.3s ease;
-            `;
-            modal.innerHTML = `
-                <h3 style="margin: 0 0 15px 0; color: #6b4e3d;">⏱️ How to Start the Timer</h3>
-                <p style="line-height: 1.6; color: #8b6f5d; margin-bottom: 20px;">
-                    The timer starts automatically when you visit a site with time limits set!<br><br>
-                    1. Click the Monkey Block icon<br>
-                    2. Add a website to track<br>
-                    3. Set a daily time limit<br>
-                    4. Visit the site - timer starts automatically!
-                </p>
-                <button onclick="this.parentElement.remove()" style="
-                    padding: 10px 20px;
-                    background: #7a9b8e;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">Got it!</button>
-            `;
-            document.body.appendChild(modal);
-            
-            // Track event
-            if (window.welcomePage) {
-                window.welcomePage.trackEvent('Start Timer Clicked');
-            }
-        });
-        
-        function showDashboardInstructions() {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: white;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                z-index: 10001;
-                max-width: 400px;
-                animation: slideIn 0.3s ease;
-            `;
-            modal.innerHTML = `
-                <h3 style="margin: 0 0 15px 0; color: #6b4e3d;">📊 Open the Dashboard</h3>
-                <p style="line-height: 1.6; color: #8b6f5d; margin-bottom: 20px;">
-                    Click the Monkey Block extension icon in your toolbar, then click "Open Dashboard" at the bottom of the popup.
-                </p>
-                <button onclick="this.parentElement.remove()" style="
-                    padding: 10px 20px;
-                    background: #7a9b8e;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">OK</button>
-            `;
-            document.body.appendChild(modal);
-        }
+
+        // Initialize first step
+        updateStep();
     </script>
 </body>
 </html>
