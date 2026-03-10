@@ -12,6 +12,8 @@ const WEB3FORMS_ACCESS_KEY = '533613f5-b3b1-4ca4-9240-dda0a4087686';
 
 // Initialize Amplitude Analytics
 let amplitudeTracker = null;
+let step1QuickFeedbackTimer = null;
+const STEP1_QUICK_FEEDBACK_DELAY_MS = 2 * 60 * 1000;
 
 async function initAmplitude() {
     amplitudeTracker = new window.AmplitudeFeedback();
@@ -28,6 +30,7 @@ let selectedReason = null;
 let feedbackData = {
     stage: 'started',
     reasons: [],
+    step2Reached: false,
     version: new URLSearchParams(window.location.search).get('v') || 'unknown'
 };
 
@@ -49,6 +52,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     setupReasonCards();
     setupFormHandlers();
+    setupEmailRevealControl();
+
+    prefillEmailFromQuery();
     
     // Track that user at least opened the form
     sendTelemetry('form_opened');
@@ -59,28 +65,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Restore any existing draft
     restoreDraft();
     
-    // Setup abandonment tracking for Step 2
-    setupAbandonmentTracking();
 });
 
 // Step 1: Reason Selection
 function setupReasonCards() {
     const cards = document.querySelectorAll('.reason-card');
+    const reasonsGrid = document.querySelector('.reasons-grid');
     const missingFeatureInput = document.getElementById('missingFeatureInput');
+    const confusingInput = document.getElementById('confusingInput');
     const somethingElseInput = document.getElementById('somethingElseInput');
     const technicalIssueInput = document.getElementById('technicalIssueInput');
+    const betterAlternativeInput = document.getElementById('betterAlternativeInput');
     const quickFeatureField = document.getElementById('quickFeature');
+    const quickConfusingField = document.getElementById('quickConfusing');
     const quickOtherField = document.getElementById('quickOther');
     const quickIssueField = document.getElementById('quickIssue');
+    const quickAlternativeField = document.getElementById('quickAlternative');
     
     // Button references
     const featureBtn = document.getElementById('featureSkipBtn');
+    const confusingBtn = document.getElementById('confusingSkipBtn');
     const issueBtn = document.getElementById('issueSkipBtn');
+    const alternativeBtn = document.getElementById('alternativeSkipBtn');
     const otherBtn = document.getElementById('otherSkipBtn');
     
     // Setup input listeners for button transformation
     setupInputButton(quickFeatureField, featureBtn, 'feature');
+    setupInputButton(quickConfusingField, confusingBtn, 'confusing');
     setupInputButton(quickIssueField, issueBtn, 'issue');
+    setupInputButton(quickAlternativeField, alternativeBtn, 'alternative');
     setupInputButton(quickOtherField, otherBtn, 'other');
     
     cards.forEach(card => {
@@ -91,29 +104,47 @@ function setupReasonCards() {
             // Add selection
             this.classList.add('selected');
             selectedReason = this.dataset.reason;
+
+            if (reasonsGrid) {
+                reasonsGrid.classList.add('focus-mode');
+            }
             
             // Hide all inputs first
             missingFeatureInput.style.display = 'none';
+            confusingInput.style.display = 'none';
             somethingElseInput.style.display = 'none';
             technicalIssueInput.style.display = 'none';
+            betterAlternativeInput.style.display = 'none';
+
+            [missingFeatureInput, confusingInput, somethingElseInput, technicalIssueInput, betterAlternativeInput].forEach(input => {
+                input.classList.remove('active');
+            });
             
-            // Reset all buttons to Skip
-            [featureBtn, issueBtn, otherBtn].forEach(btn => {
-                btn.textContent = 'Skip';
-                btn.className = 'input-btn skip-btn';
-                btn.onclick = skipToStep2;
+            // Reset all buttons to disabled Continue
+            [featureBtn, confusingBtn, issueBtn, alternativeBtn, otherBtn].forEach(btn => {
+                resetQuickActionButton(btn);
             });
             
             // Show/hide specific inputs
             if (selectedReason === 'missing-feature') {
                 missingFeatureInput.style.display = 'flex';
+                missingFeatureInput.classList.add('active');
                 quickFeatureField.focus();
                 quickFeatureField.value = feedbackData.missingFeature || '';
                 if (quickFeatureField.value) {
                     transformToSendButton(featureBtn);
                 }
+            } else if (selectedReason === 'confusing') {
+                confusingInput.style.display = 'flex';
+                confusingInput.classList.add('active');
+                quickConfusingField.focus();
+                quickConfusingField.value = feedbackData.confusingReason || '';
+                if (quickConfusingField.value) {
+                    transformToSendButton(confusingBtn);
+                }
             } else if (selectedReason === 'something-else') {
                 somethingElseInput.style.display = 'flex';
+                somethingElseInput.classList.add('active');
                 quickOtherField.focus();
                 quickOtherField.value = feedbackData.otherReason || '';
                 if (quickOtherField.value) {
@@ -121,13 +152,21 @@ function setupReasonCards() {
                 }
             } else if (selectedReason === 'bugs') {
                 technicalIssueInput.style.display = 'flex';
+                technicalIssueInput.classList.add('active');
                 quickIssueField.focus();
                 quickIssueField.value = feedbackData.technicalIssue || '';
                 if (quickIssueField.value) {
                     transformToSendButton(issueBtn);
                 }
+            } else if (selectedReason === 'better-alternative') {
+                betterAlternativeInput.style.display = 'flex';
+                betterAlternativeInput.classList.add('active');
+                quickAlternativeField.focus();
+                quickAlternativeField.value = feedbackData.betterAlternativeReason || '';
+                if (quickAlternativeField.value) {
+                    transformToSendButton(alternativeBtn);
+                }
             } else {
-                // For other reasons, go directly to step 2
                 setTimeout(() => goToStep2(), 300);
             }
             
@@ -136,29 +175,27 @@ function setupReasonCards() {
             document.getElementById('monkeyIcon').classList.add('happy');
             
             // Store reason immediately (in case user leaves)
+            feedbackData.stage = 'step1';
+            feedbackData.step2Reached = false;
             feedbackData.reasons = [selectedReason];
             saveDraft();
             sendTelemetry('reason_selected', { reason: selectedReason });
             
-            // Track in Amplitude with specific reason events
             if (amplitudeTracker) {
-                // Map reason to proper event name
-                const reasonEventMap = {
-                    'missing-feature': 'Uninstall - Reason - Missing Feature',
-                    'confusing': 'Uninstall - Reason - Complicated',
-                    'bugs': 'Uninstall - Reason - Tech Issue',
-                    'better-alternative': 'Uninstall - Reason - Better App',
-                    'something-else': 'Uninstall - Reason - Something Else'
-                };
-                
-                const eventName = reasonEventMap[selectedReason] || 'Uninstall - Reason - Unknown';
-                amplitudeTracker.track(eventName, {
+                amplitudeTracker.track('Uninstall - Reason Selected', {
                     reason: selectedReason,
                     step: 1
                 });
             }
         });
     });
+}
+
+function resetQuickActionButton(button) {
+    button.textContent = 'Send';
+    button.className = 'input-btn send-btn disabled';
+    button.disabled = true;
+    button.onclick = null;
 }
 
 // Setup input field with button transformation
@@ -172,18 +209,19 @@ function setupInputButton(inputField, button, type) {
             // Save data
             if (type === 'feature') {
                 feedbackData.missingFeature = this.value;
+            } else if (type === 'confusing') {
+                feedbackData.confusingReason = this.value;
             } else if (type === 'issue') {
                 feedbackData.technicalIssue = this.value;
+            } else if (type === 'alternative') {
+                feedbackData.betterAlternativeReason = this.value;
             } else if (type === 'other') {
                 feedbackData.otherReason = this.value;
             }
             
             saveDraft();
         } else {
-            // Transform back to Skip if empty
-            button.textContent = 'Skip';
-            button.className = 'input-btn skip-btn';
-            button.onclick = skipToStep2;
+            resetQuickActionButton(button);
             hasTrackedQuickSubmit = false; // Reset tracking flag
         }
     });
@@ -217,6 +255,7 @@ function setupInputButton(inputField, button, type) {
 function transformToSendButton(button) {
     button.textContent = 'Send';
     button.className = 'input-btn send-btn';
+    button.disabled = false;
     button.onclick = function() {
         saveDraft();
         goToStep2();
@@ -226,10 +265,21 @@ function transformToSendButton(button) {
 // Go to Step 2
 function goToStep2() {
     if (!selectedReason) return;
-    
-    // Send Step 1 data immediately
-    sendQuickFeedback('step1_complete');
-    
+
+    const reasonsGrid = document.querySelector('.reasons-grid');
+    const header = document.querySelector('.header');
+    if (reasonsGrid) {
+        reasonsGrid.classList.remove('focus-mode');
+    }
+    if (header) {
+        header.style.display = 'none';
+    }
+
+    clearStep1QuickFeedbackTimer();
+    feedbackData.stage = 'step2';
+    feedbackData.step2Reached = true;
+    saveDraft();
+
     // Track in Amplitude
     if (amplitudeTracker) {
         amplitudeTracker.track('Uninstall - Feedback Step 2', {
@@ -243,7 +293,7 @@ function goToStep2() {
     // Update UI
     document.getElementById('step1').style.display = 'none';
     document.getElementById('step2').style.display = 'block';
-    document.getElementById('headerTitle').textContent = 'One more thing... 💭';
+    updateStep2Messaging();
     
     // Focus on textarea
     document.getElementById('feedback').focus();
@@ -265,6 +315,12 @@ function skipToStep2() {
 
 // Show thank you
 function showThankYou() {
+    const header = document.querySelector('.header');
+
+    if (header) {
+        header.style.display = 'none';
+    }
+
     document.getElementById('step1').style.display = 'none';
     document.getElementById('step2').style.display = 'none';
     document.getElementById('thankYou').style.display = 'block';
@@ -299,10 +355,232 @@ function showThankYou() {
     }, 5000);
 }
 
+function prefillEmailFromQuery() {
+    const emailField = document.getElementById('email');
+    if (!emailField) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const accountEmail = (urlParams.get('account_email') || '').trim();
+    if (!accountEmail) return;
+
+    emailField.value = accountEmail;
+    feedbackData.email = accountEmail;
+    showEmailField(false);
+    saveDraft();
+}
+
+function showEmailField(shouldFocus = false) {
+    const emailGroup = document.getElementById('emailGroup');
+    const emailRevealBtn = document.getElementById('emailRevealBtn');
+    const replyYesBtn = document.getElementById('replyYesBtn');
+    const replyNoBtn = document.getElementById('replyNoBtn');
+    const emailField = document.getElementById('email');
+
+    if (emailGroup) {
+        emailGroup.classList.add('visible');
+    }
+
+    if (emailRevealBtn) {
+        emailRevealBtn.style.display = 'none';
+    }
+
+    if (replyYesBtn) {
+        replyYesBtn.classList.add('active');
+    }
+
+    if (replyNoBtn) {
+        replyNoBtn.classList.remove('active');
+    }
+
+    if (shouldFocus && emailField) {
+        emailField.focus();
+    }
+}
+
+function hideEmailReplyPrompt() {
+    const emailRevealBtn = document.getElementById('emailRevealBtn');
+    if (emailRevealBtn) {
+        emailRevealBtn.style.display = 'none';
+    }
+}
+
+function markNoReplyPreference() {
+    const replyYesBtn = document.getElementById('replyYesBtn');
+    const replyNoBtn = document.getElementById('replyNoBtn');
+    const emailGroup = document.getElementById('emailGroup');
+    const emailField = document.getElementById('email');
+
+    if (replyNoBtn) {
+        replyNoBtn.classList.add('active');
+    }
+
+    if (replyYesBtn) {
+        replyYesBtn.classList.remove('active');
+    }
+
+    if (emailGroup) {
+        emailGroup.classList.remove('visible');
+    }
+
+    if (emailField && !new URLSearchParams(window.location.search).get('account_email')) {
+        emailField.value = '';
+        feedbackData.email = '';
+        saveDraft();
+    }
+}
+
+function updateStep2Messaging() {
+    const title = document.getElementById('step2Title');
+    const description = document.getElementById('step2Description');
+    const textarea = document.getElementById('feedback');
+
+    const copy = {
+        'missing-feature': {
+            title: 'Anything else about that feature?',
+            description: 'One short detail helps us prioritize the right improvement.'
+        },
+        'confusing': {
+            title: 'What felt hardest to use?',
+            description: 'A short note helps us simplify the right part.'
+        },
+        'bugs': {
+            title: 'What happened?',
+            description: 'One short detail helps us find the bug faster.'
+        },
+        'better-alternative': {
+            title: 'What did the other app do better?',
+            description: 'A short comparison helps us understand what mattered most.'
+        },
+        'something-else': {
+            title: 'Anything else we should know?',
+            description: 'A short note gives us the missing context.'
+        }
+    };
+
+    const nextCopy = copy[selectedReason] || copy['something-else'];
+    if (title) title.textContent = nextCopy.title;
+    if (description) description.textContent = nextCopy.description;
+    if (textarea) textarea.placeholder = '';
+}
+
+function setupEmailRevealControl() {
+    const emailRevealBtn = document.getElementById('emailRevealBtn');
+    const replyYesBtn = document.getElementById('replyYesBtn');
+    const replyNoBtn = document.getElementById('replyNoBtn');
+    const feedbackField = document.getElementById('feedback');
+    const emailField = document.getElementById('email');
+
+    if (replyYesBtn) {
+        replyYesBtn.addEventListener('click', () => {
+            showEmailField(true);
+        });
+    }
+
+    if (replyNoBtn) {
+        replyNoBtn.addEventListener('click', () => {
+            markNoReplyPreference();
+        });
+    }
+
+    if (emailRevealBtn && feedbackData.email) {
+        hideEmailReplyPrompt();
+    }
+
+    if (feedbackField) {
+        feedbackField.addEventListener('focus', () => {
+            if (feedbackField.value.trim()) {
+                showEmailField(false);
+            }
+        });
+
+        feedbackField.addEventListener('input', () => {
+            if (feedbackField.value.trim()) {
+                showEmailField(false);
+            }
+        });
+    }
+
+    if (emailField) {
+        emailField.addEventListener('input', () => {
+            feedbackData.email = emailField.value;
+            if (emailField.value.trim()) {
+                showEmailField(false);
+            }
+            saveDraft();
+        });
+    }
+}
+
+function clearStep1QuickFeedbackTimer() {
+    if (step1QuickFeedbackTimer) {
+        clearTimeout(step1QuickFeedbackTimer);
+        step1QuickFeedbackTimer = null;
+    }
+}
+
+function scheduleStep1QuickFeedback() {
+    clearStep1QuickFeedbackTimer();
+
+    if (!selectedReason || feedbackData.sent || feedbackData.stage !== 'step1') {
+        return;
+    }
+
+    step1QuickFeedbackTimer = setTimeout(() => {
+        const draft = localStorage.getItem('feedback-draft');
+        if (!draft || feedbackData.sent) {
+            return;
+        }
+
+        const draftData = JSON.parse(draft);
+        if (draftData.reason && !draftData.step2Reached) {
+            sendAbandonedDraft(draftData, 'step1');
+            localStorage.removeItem('feedback-draft');
+        }
+    }, STEP1_QUICK_FEEDBACK_DELAY_MS);
+}
+
+function buildSystemSummary(browserInfo, osInfo, screenResolution) {
+    return [browserInfo, osInfo, screenResolution].filter(Boolean).join(' | ');
+}
+
+function buildLocaleSummary(language, location) {
+    return [language, location].filter(Boolean).join(' | ');
+}
+
+function addOptionalField(target, key, value) {
+    if (value === undefined || value === null) return;
+    const normalized = typeof value === 'string' ? value.trim() : value;
+    if (normalized === '') return;
+    target[key] = normalized;
+}
+
+function sendWeb3FormsPayload(payload, useKeepalive = false) {
+    const requestBody = JSON.stringify(payload);
+
+    if (useKeepalive && navigator.sendBeacon) {
+        try {
+            const blob = new Blob([requestBody], { type: 'application/json' });
+            const sent = navigator.sendBeacon('https://api.web3forms.com/submit', blob);
+            if (sent) {
+                return Promise.resolve({ ok: true });
+            }
+        } catch (error) {
+        }
+    }
+
+    return fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+        keepalive: useKeepalive
+    });
+}
+
 // Step 2: Form submission
 function setupFormHandlers() {
     const form = document.getElementById('detailsForm');
     const feedbackTextarea = document.getElementById('feedback');
+    const emailField = document.getElementById('email');
     
     // Track text input in Step 2
     let step2TextTimer;
@@ -323,6 +601,7 @@ function setupFormHandlers() {
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Sending...';
+        clearStep1QuickFeedbackTimer();
         
         // Collect all data
         feedbackData.feedback = form.feedback.value;
@@ -336,7 +615,9 @@ function setupFormHandlers() {
             if (amplitudeTracker) {
                 const uninstallDetails = {
                     missing_feature: feedbackData.missingFeature || null,
+                    confusing_reason: feedbackData.confusingReason || null,
                     technical_issue: feedbackData.technicalIssue || null, 
+                    better_alternative_reason: feedbackData.betterAlternativeReason || null,
                     other_reason: feedbackData.otherReason || null,
                     detailed_feedback: feedbackData.feedback || null,
                     has_email: !!feedbackData.email
@@ -353,81 +634,21 @@ function setupFormHandlers() {
             alert('Sorry, there was an error. Please try again.');
         }
     });
-}
 
-// Setup abandonment tracking for Step 2
-function setupAbandonmentTracking() {
-    let isStep2Active = false;
-    let hasSubmitted = false;
-    
-    // Track when Step 2 becomes active
-    const observer = new MutationObserver((mutations) => {
-        const step2 = document.getElementById('step2');
-        if (step2 && step2.style.display !== 'none') {
-            isStep2Active = true;
-        } else {
-            isStep2Active = false;
-        }
-    });
-    
-    observer.observe(document.body, { 
-        childList: true, 
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style']
-    });
-    
-    // Track abandonment on page unload
-    window.addEventListener('beforeunload', () => {
-        if (isStep2Active && !hasSubmitted && amplitudeTracker) {
-            const feedbackText = document.getElementById('feedback')?.value || '';
-            
-            if (feedbackText.trim().length > 0) {
-                // User wrote something but didn't submit
-                amplitudeTracker.track('Uninstall - Abandonment Step 2', {
-                    reason: selectedReason,
-                    abandoned_text: feedbackText,
-                    text_length: feedbackText.length,
-                    has_email: !!document.getElementById('email')?.value
-                });
-            }
-        }
-    });
-    
-    // Mark as submitted when form is submitted
-    document.getElementById('detailsForm').addEventListener('submit', () => {
-        hasSubmitted = true;
-    });
-}
-
-// Send quick feedback (Step 1 only)
-async function sendQuickFeedback(stage) {
-    const data = {
-        access_key: WEB3FORMS_ACCESS_KEY,
-        subject: `Monkey Block - Quick Feedback (${stage})`,
-        from_name: 'Monkey Block User',
-        reason: selectedReason,
-        stage: stage,
-        version: feedbackData.version,
-        timestamp: new Date().toISOString()
-    };
-    
-    // Fire and forget - don't wait for response
-    fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    }).catch(() => {}); // Silently fail
+    if (emailField) {
+        emailField.addEventListener('focus', () => showEmailField(false));
+    }
 }
 
 // Send full feedback
 async function sendFullFeedback() {
     const missingFeature = document.getElementById('quickFeature')?.value || feedbackData.missingFeature;
+    const confusingReason = document.getElementById('quickConfusing')?.value || feedbackData.confusingReason;
     const otherReason = document.getElementById('quickOther')?.value || feedbackData.otherReason;
     const technicalIssue = document.getElementById('quickIssue')?.value || feedbackData.technicalIssue;
+    const betterAlternativeReason = document.getElementById('quickAlternative')?.value || feedbackData.betterAlternativeReason;
 
     // Get system information
-    const platform = navigator.platform || 'Unknown';
     const language = navigator.language || 'Unknown';
     const screenResolution = `${screen.width}x${screen.height}`;
 
@@ -482,84 +703,36 @@ async function sendFullFeedback() {
     }
 
     // Get days used from Amplitude tracker if available
-    let daysUsed = 'Unknown';
     let timeSinceInstallFormatted = 'Unknown';
     if (amplitudeTracker) {
-        daysUsed = amplitudeTracker.daysUsed || 'Unknown';
         timeSinceInstallFormatted = amplitudeTracker.timeSinceInstallFormatted || 'Unknown';
     }
+
+    const cleanedLocation = `${locationData.city}, ${locationData.country}`;
+    const systemSummary = buildSystemSummary(browserInfo, osInfo, screenResolution);
+    const localeSummary = buildLocaleSummary(language, cleanedLocation);
 
     const data = {
         access_key: WEB3FORMS_ACCESS_KEY,
         subject: 'Monkey Block - Complete Uninstall Feedback',
         from_name: 'Monkey Block User',
 
-        // Main data
-        reason: selectedReason,
-        missing_feature: missingFeature || '',
-        other_reason: otherReason || '',
-        technical_issue: technicalIssue || '',
-        detailed_feedback: feedbackData.feedback || 'No details provided',
-        user_email: feedbackData.email || 'Not provided',
-
-        // Metadata
-        version: feedbackData.version,
-        timestamp: new Date().toISOString(),
-
-        // System information
-        browser: browserInfo,
-        os: osInfo,
-        platform: platform,
-        language: language,
-        screen_resolution: screenResolution,
-        location: `${locationData.city}, ${locationData.country}`,
-        full_user_agent: ua,
-
-        // Usage metrics
-        days_used: daysUsed,
         time_since_install: timeSinceInstallFormatted,
-
-        // Formatted message
-        message: `
-COMPLETE UNINSTALL FEEDBACK:
-
-PRIMARY REASON: ${selectedReason}
-${missingFeature ? `MISSING FEATURE: ${missingFeature}` : ''}
-${technicalIssue ? `TECHNICAL ISSUE: ${technicalIssue}` : ''}
-${otherReason ? `OTHER REASON: ${otherReason}` : ''}
-
-DETAILED FEEDBACK:
-${feedbackData.feedback || 'No additional details provided'}
-
-USER EMAIL: ${feedbackData.email || 'Not provided'}
-
-METADATA:
-- Extension Version: ${feedbackData.version}
-- Submitted: ${new Date().toLocaleString()}
-- Form Type: Two-Step Process (Simplified)
-
-SYSTEM INFORMATION:
-- Browser: ${browserInfo}
-- OS: ${osInfo}
-- Platform: ${platform}
-- Language: ${language}
-- Screen Resolution: ${screenResolution}
-- Location: ${locationData.city}, ${locationData.country}
-
-USAGE METRICS:
-- Days Used: ${daysUsed}
-- Time Since Install: ${timeSinceInstallFormatted}
-
-TECHNICAL DETAILS:
-- User Agent: ${ua}
-        `.trim()
+        reason: selectedReason,
+        version: feedbackData.version,
+        system: systemSummary,
+        locale: localeSummary
     };
 
-    const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
+    addOptionalField(data, 'user_email', feedbackData.email || '');
+    addOptionalField(data, 'missing_feature', missingFeature || '');
+    addOptionalField(data, 'confusing_reason', confusingReason || '');
+    addOptionalField(data, 'technical_issue', technicalIssue || '');
+    addOptionalField(data, 'better_alternative_reason', betterAlternativeReason || '');
+    addOptionalField(data, 'other_reason', otherReason || '');
+    addOptionalField(data, 'detailed_feedback', feedbackData.feedback || '');
+
+    const response = await sendWeb3FormsPayload(data);
 
     if (!response.ok) {
         throw new Error('Failed to send feedback');
@@ -582,10 +755,14 @@ function sendTelemetry(event, data = {}) {
 // Auto-save draft functionality
 function saveDraft() {
     const draftData = {
+        stage: feedbackData.stage || 'step1',
+        step2Reached: !!feedbackData.step2Reached,
         reason: selectedReason,
         missingFeature: feedbackData.missingFeature || '',
+        confusingReason: feedbackData.confusingReason || '',
         otherReason: feedbackData.otherReason || '',
         technicalIssue: feedbackData.technicalIssue || '',
+        betterAlternativeReason: feedbackData.betterAlternativeReason || '',
         feedback: document.getElementById('feedback')?.value || '',
         email: document.getElementById('email')?.value || '',
         timestamp: Date.now(),
@@ -593,6 +770,12 @@ function saveDraft() {
     };
     
     localStorage.setItem('feedback-draft', JSON.stringify(draftData));
+
+    if ((draftData.stage || 'step1') === 'step1') {
+        scheduleStep1QuickFeedback();
+    } else {
+        clearStep1QuickFeedbackTimer();
+    }
 }
 
 // Setup auto-send for abandoned drafts
@@ -602,25 +785,30 @@ function setupAutoSendDraft() {
         const draft = localStorage.getItem('feedback-draft');
         if (draft) {
             const data = JSON.parse(draft);
-            // If draft is 10+ minutes old and not sent, send it
-            if (Date.now() - data.timestamp > 10 * 60 * 1000) {
-                sendAbandonedDraft(data);
+            const thresholdMs = data.step2Reached ? 10 * 60 * 1000 : STEP1_QUICK_FEEDBACK_DELAY_MS;
+            if (Date.now() - data.timestamp > thresholdMs && data.reason) {
+                sendAbandonedDraft(data, getCurrentAbandonmentStage());
                 localStorage.removeItem('feedback-draft');
             }
         }
     }, 30000);
     
-    // Also send on page unload if draft exists
     window.addEventListener('beforeunload', () => {
         const draft = localStorage.getItem('feedback-draft');
         if (draft && !feedbackData.sent) {
             const data = JSON.parse(draft);
-            // Only send if user spent some time on the form
-            if (Date.now() - data.timestamp > 5000) {
-                sendAbandonedDraft(data);
+            const isStep1Ready = !data.step2Reached && (Date.now() - data.timestamp >= STEP1_QUICK_FEEDBACK_DELAY_MS);
+            if (data.reason && (data.step2Reached || isStep1Ready)) {
+                sendAbandonedDraft(data, getCurrentAbandonmentStage(), true);
+                localStorage.removeItem('feedback-draft');
             }
         }
     });
+}
+
+function getCurrentAbandonmentStage() {
+    const step2 = document.getElementById('step2');
+    return step2 && step2.style.display !== 'none' ? 'step2' : 'step1';
 }
 
 // Restore draft on load
@@ -628,6 +816,7 @@ function restoreDraft() {
     const draft = localStorage.getItem('feedback-draft');
     if (draft) {
         const data = JSON.parse(draft);
+        const queryEmail = (new URLSearchParams(window.location.search).get('account_email') || '').trim();
         // Only restore if less than 1 hour old
         if (Date.now() - data.timestamp < 3600000) {
             feedbackData = { ...feedbackData, ...data };
@@ -635,16 +824,23 @@ function restoreDraft() {
                 document.getElementById('feedback').value = data.feedback || '';
             }
             if (document.getElementById('email')) {
-                document.getElementById('email').value = data.email || '';
+                document.getElementById('email').value = queryEmail || data.email || '';
+            }
+            feedbackData.email = queryEmail || data.email || '';
+            if (feedbackData.email) {
+                showEmailField(false);
+                hideEmailReplyPrompt();
+            }
+            if ((data.stage || 'step1') === 'step1' && data.reason) {
+                scheduleStep1QuickFeedback();
             }
         }
     }
 }
 
 // Send abandoned draft
-async function sendAbandonedDraft(draftData) {
+async function sendAbandonedDraft(draftData, abandonmentStage = 'step1', useKeepalive = false) {
     // Get system information
-    const platform = navigator.platform || 'Unknown';
     const language = navigator.language || 'Unknown';
     const screenResolution = `${screen.width}x${screen.height}`;
 
@@ -698,75 +894,50 @@ async function sendAbandonedDraft(draftData) {
         console.log('Could not fetch location data for abandoned draft');
     }
 
-    // Get days used from Amplitude tracker if available
-    let daysUsed = 'Unknown';
+    // Get time since install from Amplitude tracker if available
     let timeSinceInstallFormatted = 'Unknown';
     if (amplitudeTracker) {
-        daysUsed = amplitudeTracker.daysUsed || 'Unknown';
         timeSinceInstallFormatted = amplitudeTracker.timeSinceInstallFormatted || 'Unknown';
     }
 
+    const cleanedLocation = `${locationData.city}, ${locationData.country}`;
+    const systemSummary = buildSystemSummary(browserInfo, osInfo, screenResolution);
+    const localeSummary = buildLocaleSummary(language, cleanedLocation);
+
     const payload = {
         access_key: WEB3FORMS_ACCESS_KEY,
-        subject: 'Monkey Block - Abandoned Feedback Draft',
+        subject: abandonmentStage === 'step1' ? 'Monkey Block - Quick Uninstall Feedback' : 'Monkey Block - Abandoned Uninstall Feedback',
         from_name: 'Monkey Block User',
 
-        // Draft data
+        time_since_install: timeSinceInstallFormatted,
         reason: draftData.reason || 'not selected',
-        missing_feature: draftData.missingFeature || '',
-        partial_feedback: draftData.feedback || '',
-        email: draftData.email || 'not provided',
-
-        // Metadata
+        abandonment_stage: abandonmentStage,
         draft_age_minutes: Math.floor((Date.now() - draftData.timestamp) / 60000),
         version: draftData.version,
-
-        // System information
-        browser: browserInfo,
-        os: osInfo,
-        platform: platform,
-        language: language,
-        screen_resolution: screenResolution,
-        location: `${locationData.city}, ${locationData.country}`,
-        full_user_agent: ua,
-
-        // Usage metrics
-        days_used: daysUsed,
-        time_since_install: timeSinceInstallFormatted,
-
-        message: `
-ABANDONED FEEDBACK DRAFT:
-
-REASON: ${draftData.reason || 'Not selected'}
-${draftData.missingFeature ? `MISSING FEATURE: ${draftData.missingFeature}` : ''}
-
-PARTIAL FEEDBACK: ${draftData.feedback || 'None'}
-EMAIL: ${draftData.email || 'Not provided'}
-
-This draft was abandoned after ${Math.floor((Date.now() - draftData.timestamp) / 60000)} minutes.
-Version: ${draftData.version}
-
-SYSTEM INFORMATION:
-- Browser: ${browserInfo}
-- OS: ${osInfo}
-- Platform: ${platform}
-- Language: ${language}
-- Screen Resolution: ${screenResolution}
-- Location: ${locationData.city}, ${locationData.country}
-
-USAGE METRICS:
-- Days Used: ${daysUsed}
-- Time Since Install: ${timeSinceInstallFormatted}
-
-TECHNICAL DETAILS:
-- User Agent: ${ua}
-        `.trim()
+        system: systemSummary,
+        locale: localeSummary
     };
 
-    // Fire and forget
-    fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    }).catch(() => {});
+    addOptionalField(payload, 'user_email', draftData.email || '');
+    addOptionalField(payload, 'missing_feature', draftData.missingFeature || '');
+    addOptionalField(payload, 'confusing_reason', draftData.confusingReason || '');
+    addOptionalField(payload, 'technical_issue', draftData.technicalIssue || '');
+    addOptionalField(payload, 'better_alternative_reason', draftData.betterAlternativeReason || '');
+    addOptionalField(payload, 'other_reason', draftData.otherReason || '');
+    addOptionalField(payload, 'detailed_feedback', draftData.feedback || '');
+
+    if (amplitudeTracker) {
+        amplitudeTracker.track(`Uninstall - Abandonment ${abandonmentStage === 'step2' ? 'Step 2' : 'Step 1'}`, {
+            reason: draftData.reason || 'not selected',
+            has_missing_feature: !!draftData.missingFeature,
+            has_confusing_reason: !!draftData.confusingReason,
+            has_technical_issue: !!draftData.technicalIssue,
+            has_better_alternative_reason: !!draftData.betterAlternativeReason,
+            has_other_reason: !!draftData.otherReason,
+            has_detailed_feedback: !!draftData.feedback,
+            has_email: !!draftData.email
+        });
+    }
+
+    sendWeb3FormsPayload(payload, useKeepalive).catch(() => {});
 }
